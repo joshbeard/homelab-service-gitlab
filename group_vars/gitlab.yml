@@ -1,0 +1,33 @@
+# -----------------------------------------------------------------------------
+# GitLab Server
+#
+# This is served by an Ubuntu VM.
+# -----------------------------------------------------------------------------
+gitlab_domain: code.home.jbeard.dev
+gitlab_external_url: "https://{{ gitlab_domain }}/"
+gitlab_git_data_dir: "/var/opt/gitlab/git-data"
+gitlab_backup_path: "/var/opt/gitlab/backups"
+gitlab_edition: "gitlab-ce"
+
+gitlab_time_zone: "America/Denver"
+
+# How long to keep backups, in seconds
+# 604800 = 7 days
+gitlab_backup_keep_time: "604800"
+
+
+#gitlab_redirect_http_to_https: "true"
+gitlab_create_self_signed_cert: false
+gitlab_ssl_certificate: "/mnt/ssl/live/home.jbeard.dev/fullchain.pem"
+gitlab_ssl_certificate_key: "/mnt/ssl/live/home.jbeard.dev/privkey.pem"
+
+## Email configuration.
+#gitlab_email_enabled: "true"
+#gitlab_email_from: "gitlab@code.home.jbeard.dev"
+#gitlab_email_display_name: "Gitlab"
+#gitlab_email_reply_to: "gitlab@code.home.jbeard.dev"
+
+gitlab_registry_enable: true
+gitlab_registry_external_url: "https://code.home.jbeard.dev:5050"
+gitlab_registry_nginx_ssl_certificate: "/mnt/ssl/live/home.jbeard.dev/fullchain.pem"
+gitlab_registry_nginx_ssl_certificate_key: "/mnt/ssl/live/home.jbeard.dev/privkey.pem"

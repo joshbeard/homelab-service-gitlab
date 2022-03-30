@@ -1,0 +1,8 @@
+collections:
+  - name: https://code.home.jbeard.dev/homelab/platform/homelab-base.git
+    type: git
+
+roles:
+  - src: https://github.com/mglantz/ansible-role-gitlab.git
+    version: master
+    name: gitlab

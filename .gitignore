@@ -1,0 +1,5 @@
+.terraform
+*.tfstate*
+.terraform.lock.hcl
+compiled-user-data.yml
+vars.tfvars

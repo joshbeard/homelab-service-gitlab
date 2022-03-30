@@ -1,0 +1,59 @@
+# -----------------------------------------------------------------------------
+# Ansible Playbook for GitLab Server
+# -----------------------------------------------------------------------------
+---
+# ------------------------------------------
+# NFS Exports
+# ------------------------------------------
+- name: "SSL NFS storage"
+  hosts: nfs
+  gather_facts: true
+  tasks:
+    - include_role:
+        name: jbeard.homelab.nfs
+      vars:
+        nfs_exports:
+          - gitlab_data: /store/data/services/gitlab/data 10.0.13.0/24(sync,rw,no_subtree_check,no_root_squash)
+          - gitlab_backups: /store/data/services/gitlab/backups 10.0.13.0/24(sync,rw,no_subtree_check,no_root_squash)
+
+# Base system playbook
+- import_playbook: jbeard.homelab.main
+  vars:
+    target: gitlab
+
+# ------------------------------------------
+# GitLab Server
+# ------------------------------------------
+- name: GitLab Server
+  hosts: gitlab
+  gather_facts: true
+  become: true
+
+  tasks:
+  - name: Install NFS package
+    ansible.builtin.package:
+      name: nfs-common
+      state: present
+  - name: Mount GitLab Data from NFS
+    ansible.posix.mount:
+      src: nfs.home.jbeard.dev:/store/data/services/gitlab/data
+      path: /var/opt/gitlab/git-data
+      opts: rw,sync,hard,intr
+      state: mounted
+      fstype: nfs
+  - name: Mount GitLab Backups from NFS
+    ansible.posix.mount:
+      src: nfs.home.jbeard.dev:/store/data/services/gitlab/backups
+      path: /var/opt/gitlab/backups
+      opts: rw,sync,hard,intr
+      state: mounted
+      fstype: nfs
+  - name: Mount SSL from NFS
+    ansible.posix.mount:
+      src: nfs.home.jbeard.dev:/store/data/ssl
+      path: /mnt/ssl
+      opts: ro,sync,hard,intr
+      state: mounted
+      fstype: nfs
+  - include_role:
+      name: gitlab

@@ -1,0 +1,67 @@
+stages:
+  - tf:plan
+  - tf:apply
+  - deploy
+
+# -----------------------------------------------------------------------------
+# Terraform (VM management)
+# -----------------------------------------------------------------------------
+.tf:
+  image:
+    name: hashicorp/terraform
+    entrypoint: ['']
+  variables:
+    TF_VAR_pm_api_url: ${PROXMOX_API_URL}
+    TF_VAR_pm_user: ${PROXMOX_API_USER}
+    TF_VAR_pm_password: ${PROXMOX_API_PASSWORD}
+    TF_VAR_pm_tls_insecure: "true"
+    TF_VAR_pm_ssh_user: ${PROXMOX_SSH_USER}
+    TF_VAR_pm_ssh_pass: ${PROXMOX_SSH_PASS}
+    TF_VAR_pm_ssh_host: ${PROXMOX_SSH_HOST}
+
+tf:plan:
+  extends: .tf
+  stage: tf:plan
+  script:
+    - cd terraform
+    - terraform init -reconfigure
+      -backend-config="conn_str=postgres://terraform:${TF_BACKEND_PGSQL_PASSWORD}@${PGSQL_HOST}/terraform_state"
+    - terraform plan -refresh=true -input=false
+      -out=plan.tfplan
+  cache:
+    paths:
+      - terraform/compiled-user-data.yml
+  artifacts:
+    paths:
+      - terraform/.terraform/
+      - terraform/.terraform.lock.hcl
+      - terraform/plan.tfplan
+
+tf:apply:
+  extends: .tf
+  when: manual
+  allow_failure: true
+  stage: tf:apply
+  dependencies:
+    - tf:plan
+  cache:
+    paths:
+      - terraform/compiled-user-data.yml
+  script:
+    - cd terraform
+    - terraform apply -input=false -auto-approve plan.tfplan
+
+# -----------------------------------------------------------------------------
+# Ansible Playbook Run
+# -----------------------------------------------------------------------------
+deploy:
+  stage: deploy
+  image:
+    name: code.home.jbeard.dev:5050/homelab/platform/homelab-base/ansible-tool:latest
+    entrypoint: ['']
+  before_script:
+    - set -a
+    - cp $SSH_PRIVATE_KEY /home/ansible/.ssh/id_rsa && chmod 400 /home/ansible/.ssh/id_rsa
+  script:
+    - ansible-galaxy install -r requirements.yml
+    - ansible-playbook -i inventory.ini -u deployer -b gitlab.yml
